@@ -1,0 +1,53 @@
+version: "3.2"
+services:
+  nodejs:
+    build: 
+      context: .
+    image: fintrac-node-app
+    networks:
+      - frontend
+      - backend
+    env_file: ./.env.development
+    volumes:
+      - ./www/:/var/www/html/
+    ports:
+      - "5000:5000"
+    container_name: fintrac-nodejs-app
+    depends_on:
+      - mysql
+    entrypoint: >
+      /bin/sh -c '
+      if [ ! -f /app/wait-for-it.sh ]; then
+        wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O /app/wait-for-it.sh;
+        chmod +x /app/wait-for-it.sh;
+      fi;
+      /app/wait-for-it.sh mysql:3306 -- npm start'
+  mysql:
+    image: mysql:latest
+    networks:
+      - backend
+    environment:
+      - MYSQL_ROOT_PASSWORD=Password@123
+      - MYSQL_DATABASE=fintrac
+    container_name: fintrac-mysql-app
+    volumes:
+      - mysql-data:/var/lib/mysql
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - mysql
+    networks:
+      - backend
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=fintrac-mysql-app
+      - PMA_PORT=3306
+    volumes:
+      - /sessions
+    container_name: fintrac-phpmyadmin-app
+volumes:
+  mysql-data:
+networks:
+  frontend:
+  backend:
